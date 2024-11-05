@@ -1,28 +1,18 @@
-[![CircleCI](https://circleci.com/gh/creditkudos/eidas.svg?style=svg)](https://circleci.com/gh/creditkudos/eidas)
-[![Go Reference](https://pkg.go.dev/badge/github.com/creditkudos/eidas.svg)](https://pkg.go.dev/github.com/creditkudos/eidas)
-[![Go Report Card](https://goreportcard.com/badge/github.com/creditkudos/eidas)](https://goreportcard.com/report/github.com/creditkudos/eidas)
+[![Go Reference](https://pkg.go.dev/badge/github.com/apple/eidas.svg)](https://pkg.go.dev/github.com/apple/eidas)
+[![Go Report Card](https://goreportcard.com/badge/github.com/apple/eidas)](https://goreportcard.com/report/github.com/apple/eidas)
 
 # eIDAS
 Tools for reading and creating eIDAS certificate signing requests
 
 ## Generating a Certificate Signing Request (CSR)
 
-### With Docker:
+### With go (requires go 1.22 or higher):
 ```bash
-docker run -v $(pwd):/work --network none creditkudos/eidas \
-  -country-code GB \
-  -organization-name "Your Organization Limited" \
-  -organization-id PSDGB-FCA-123456 \
-  -common-name 0123456789abcdef
-```
-
-### With go (requires go 1.11 or higher):
-```bash
-go get github.com/creditkudos/eidas/cmd/cli
+go get github.com/apple/eidas/cmd/cli
 ```
 
 ```bash
-go run github.com/creditkudos/eidas/cmd/cli \
+go run github.com/apple/eidas/cmd/cli \
   -country-code GB \
   -organization-name "Your Organization Limited" \
   -organization-id PSDGB-FCA-123456 \
@@ -38,7 +28,7 @@ go run github.com/creditkudos/eidas/cmd/cli \
 ### Other flags
 You can see the available flags with
 ```
-go run github.com/creditkudos/eidas/cmd/cli -help
+go run github.com/apple/eidas/cmd/cli -help
 ```
 
 By default this will generate two files: `out.csr` and `out.key` containing the CSR and the private key, respectively.

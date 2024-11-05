@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/creditkudos/eidas/qcstatements"
+	"github.com/apple/eidas/qcstatements"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

@@ -1,4 +1,4 @@
-module github.com/creditkudos/eidas
+module github.com/apple/eidas
 
 go 1.22.0
 
