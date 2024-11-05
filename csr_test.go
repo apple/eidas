@@ -1,6 +1,10 @@
 package eidas
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -92,6 +96,22 @@ func TestBuildCSR(t *testing.T) {
 		csr, err := x509.ParseCertificateRequest(data)
 		So(err, ShouldBeNil)
 		So(csr.DNSNames, ShouldResemble, []string{"foo.example.com", "bar.example.com"})
+	})
+
+	Convey("CSR with existing key", t, func() {
+		key, err := rsa.GenerateKey(rand.Reader, 2048)
+		So(err, ShouldBeNil)
+		data, err := GenerateCSRWithKey("GB", "Foo Org", "Foo Org ID", "Foo Name", []qcstatements.Role{qcstatements.RoleAccountInformation}, qcstatements.QWACType, key)
+		So(err, ShouldBeNil)
+		So(data, ShouldNotBeNil)
+	})
+
+	Convey("CSR with incorrect key type", t, func() {
+		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		So(err, ShouldBeNil)
+		data, err := GenerateCSRWithKey("GB", "Foo Org", "Foo Org ID", "Foo Name", []qcstatements.Role{qcstatements.RoleAccountInformation}, qcstatements.QWACType, key)
+		So(err, ShouldBeError, "only RSA keys are currently supported but got: *ecdsa.PublicKey")
+		So(data, ShouldBeNil)
 	})
 }
 

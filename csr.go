@@ -3,6 +3,7 @@
 package eidas
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -25,32 +26,30 @@ func WithDNSName(domain string) CertificateOption {
 	}
 }
 
-// GenerateCSR builds a certificate signing request for an organization.
+// GenerateCSRWithKey builds a certificate signing request for an organization based on an existing private key.
 // qcType should be one of qcstatements.QSEALType or qcstatements.QWACType.
-func GenerateCSR(
-	countryCode string, orgName string, orgID string, commonName string, roles []qcstatements.Role, qcType asn1.ObjectIdentifier, opts ...CertificateOption) ([]byte, *rsa.PrivateKey, error) {
-	key, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate key pair: %v", err)
+func GenerateCSRWithKey(
+	countryCode string, orgName string, orgID string, commonName string, roles []qcstatements.Role, qcType asn1.ObjectIdentifier, priv crypto.Signer, opts ...CertificateOption) ([]byte, error) {
+	if _, ok := priv.Public().(*rsa.PublicKey); !ok {
+		return nil, fmt.Errorf("only RSA keys are currently supported but got: %T", priv.Public())
 	}
-
 	ca, err := qcstatements.CompetentAuthorityForCountryCode(countryCode)
 	if err != nil {
-		return nil, nil, fmt.Errorf("eidas: %v", err)
+		return nil, fmt.Errorf("eidas: %v", err)
 	}
 
 	qc, err := qcstatements.Serialize(roles, *ca, qcType)
 	if err != nil {
-		return nil, nil, fmt.Errorf("eidas: %v", err)
+		return nil, fmt.Errorf("eidas: %v", err)
 	}
 
 	keyUsage, err := keyUsageForType(qcType)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	extendedKeyUsage, err := extendedKeyUsageForType(qcType)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	extensions := []pkix.Extension{
@@ -59,11 +58,11 @@ func GenerateCSR(
 	if len(extendedKeyUsage) != 0 {
 		extensions = append(extensions, extendedKeyUsageExtension(extendedKeyUsage))
 	}
-	extensions = append(extensions, subjectKeyIdentifier(key.PublicKey), qcStatementsExtension(qc))
+	extensions = append(extensions, subjectKeyIdentifier(priv.Public().(*rsa.PublicKey)), qcStatementsExtension(qc))
 
 	subject, err := buildSubject(countryCode, orgName, commonName, orgID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to build CSR subject: %v", err)
+		return nil, fmt.Errorf("failed to build CSR subject: %v", err)
 	}
 	req := &x509.CertificateRequest{
 		Version:            0,
@@ -75,9 +74,25 @@ func GenerateCSR(
 	for _, opt := range opts {
 		opt(req)
 	}
-	csr, err := x509.CreateCertificateRequest(rand.Reader, req, key)
+	csr, err := x509.CreateCertificateRequest(rand.Reader, req, priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate csr: %v", err)
+		return nil, fmt.Errorf("failed to generate csr: %v", err)
+	}
+	return csr, err
+}
+
+// GenerateCSR generates an RSA key and builds a certificate signing request for an organization.
+// qcType should be one of qcstatements.QSEALType or qcstatements.QWACType.
+func GenerateCSR(
+	countryCode string, orgName string, orgID string, commonName string, roles []qcstatements.Role, qcType asn1.ObjectIdentifier, opts ...CertificateOption) ([]byte, *rsa.PrivateKey, error) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate key pair: %v", err)
+	}
+
+	csr, err := GenerateCSRWithKey(countryCode, orgName, orgID, commonName, roles, qcType, key, opts...)
+	if err != nil {
+		return nil, nil, err
 	}
 	return csr, key, nil
 }
@@ -142,8 +157,8 @@ func extendedKeyUsageExtension(usages []asn1.ObjectIdentifier) pkix.Extension {
 	}
 }
 
-func subjectKeyIdentifier(key rsa.PublicKey) pkix.Extension {
-	b := sha1.Sum(x509.MarshalPKCS1PublicKey(&key))
+func subjectKeyIdentifier(key *rsa.PublicKey) pkix.Extension {
+	b := sha1.Sum(x509.MarshalPKCS1PublicKey(key))
 	d, err := asn1.Marshal(b[:])
 	if err != nil {
 		log.Fatalf("failed to marshal subject key identifier: %v", err)
