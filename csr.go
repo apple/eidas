@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/creditkudos/eidas/qcstatements"
+	"github.com/apple/eidas/qcstatements"
 )
 
 type CertificateOption func(*x509.CertificateRequest)

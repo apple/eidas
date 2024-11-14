@@ -12,8 +12,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/creditkudos/eidas"
-	"github.com/creditkudos/eidas/qcstatements"
+	"github.com/apple/eidas"
+	"github.com/apple/eidas/qcstatements"
 )
 
 var countryCode = flag.String("country-code", "", "ISO-3166-1 Alpha 2 country code")

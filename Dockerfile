@@ -1,5 +1,4 @@
-FROM golang:1.17-buster as builder
-MAINTAINER Credit Kudos Engineering <engineering@creditkudos.com>
+FROM golang:1.23-bullseye as builder
 
 RUN mkdir /build
 ADD . /build/
